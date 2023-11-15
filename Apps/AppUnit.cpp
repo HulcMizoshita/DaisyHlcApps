@@ -113,12 +113,18 @@ void AppUnit::UpdateFixedControls(u_int8_t& row, u_int8_t& column, int32_t inc)
 
 void AppUnit::AudioTickCallback(const float * const*in, float **out, size_t size)
 {
-  for (size_t i = 0; i < size; i++)
+  for (u_int8_t slot = 0; slot < 2; slot++)
   {
-      out[0][i] = 0;
-      out[1][i] = 0;
-      out[2][i] = 0;
-      out[3][i] = 0;
+    if (m_slot != slot)
+    {
+      continue;
+    }
+    
+    for (size_t i = 0; i < size; i++)
+    {
+      out[slot * 2][i] = in[slot * 2][i];
+      out[slot * 2 + 1][i] = in[slot * 2 + 1][i];
+    }
   }
 }
 

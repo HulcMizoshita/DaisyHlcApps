@@ -9,7 +9,8 @@ CPP_SOURCES += \
 DaisyHlcApps.cpp \
 Utils/SampleHolder.cpp \
 Utils/MainDelayLine.cpp \
-Apps/AppUnit.cpp
+Apps/AppUnit.cpp \
+Apps/DualVca/DualVca.cpp
 
 # Library Locations
 LIBDAISY_DIR = ./OutSourced/libDaisy/

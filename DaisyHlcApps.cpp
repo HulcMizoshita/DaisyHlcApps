@@ -13,6 +13,7 @@
 #include "Utils/MainDelayLine.h"
 
 #include "Apps/AppUnit.h"
+#include "Apps/DualVca/DualVca.h"
 
 #define CLAMP(value, min, max) ((value < min) ? min : ((value > max) ? max : value))
 
@@ -77,7 +78,7 @@ void updateControls()
     }
     else
     {
-      if (pressCount < patch.AudioSampleRate() * 0.5f)
+      if (pressCount < patch.AudioSampleRate() / patch.AudioBlockSize() * 0.5f)
       {
         selectRow = kRowStateInFront;
       }
@@ -98,8 +99,7 @@ void updateControls()
     switch (selectRow)
     {
     case kRowStateEx:
-      selectColumn += inc;
-      selectColumn = selectColumn < 0 ? 0 : selectColumn;
+      selectColumn = (int8_t)selectColumn + inc < 0 ? 0 : selectColumn + inc;
       break;
     case kRowStateInFront:
       if (selectColumn == 0 && inc != 0)
@@ -116,12 +116,12 @@ void updateControls()
         case kTabA:
           selectAppA += inc;
           selectAppA = CLAMP(selectAppA ,kAppTypeVca, kNumAppType - 1);
-          appA.reset(new AppUnit(patch, 0, "BlankA"));
+          appA.reset(new DualVca(patch, 0));
           break;
         case kTabB:
           selectAppB += inc;
           selectAppB = CLAMP(selectAppB ,kAppTypeVca, kNumAppType - 1);
-          appB.reset(new AppUnit(patch, 1, "BlankB"));
+          appB.reset(new AppUnit(patch, 1, "Blank"));
           break;
         default:
           break;
@@ -165,13 +165,18 @@ void UpdateOled()
   patch.display.SetCursor(0,0);
   patch.display.WriteString(buf, Font_7x10, true);
 
-  if (selectColumn == 0 && selectRow == kRowStateInFront)
-  {
-    patch.display.DrawRect(0, patch.display.Width(), 0, patch.display.Height(), true);
-  }
-
   patch.display.SetCursor(7 * 1, 0);
-  sprintf(buf, "%s", appA->GetName().c_str());
+  switch (selectTab)
+  {
+  case kTabA:
+    sprintf(buf, "%s", appA->GetName().c_str());
+    break;
+  case kTabB:
+    sprintf(buf, "%s", appB->GetName().c_str());
+    break;
+  default:
+    break;
+  }
   patch.display.WriteString(
     buf,
     Font_7x10,
@@ -188,6 +193,11 @@ void UpdateOled()
     break;
   default:
     break;
+  }
+
+  if (selectColumn == 0 && selectRow == kRowStateInFront)
+  {
+    patch.display.DrawRect(0, 0, patch.display.Width()-1, patch.display.Height()-1, true);
   }
 
   patch.display.Update();
@@ -221,8 +231,8 @@ int main(void)
 	patch.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
 	patch.StartAudio(AudioCallback);
 
-  appA.reset(new AppUnit(patch, 0, "BlankA"));
-  appB.reset(new AppUnit(patch, 1, "BlankB"));
+  appA.reset(new DualVca(patch, 0));
+  appB.reset(new AppUnit(patch, 1, "Blank"));
 
   appA->Init();
   appB->Init();
@@ -231,7 +241,6 @@ int main(void)
 	{
 	  patch.DelayMs(1);
 
-    updateControls();
     appA->MainLoopCallback();
     appB->MainLoopCallback();
 
