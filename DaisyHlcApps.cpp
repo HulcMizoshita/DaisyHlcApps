@@ -183,6 +183,14 @@ void UpdateOled()
     !(selectColumn == 0 && selectRow == kRowStateInBack)
   );
 
+  patch.display.SetCursor(7 * 17, 0);
+  sprintf(buf, "%s", selectTab == kTabA ? "A" : "B");
+  patch.display.WriteString(
+    buf,
+    Font_7x10,
+    !(selectColumn == 0 && selectRow == kRowStateInFront)
+  );
+
   switch (selectTab)
   {
   case kTabA:
