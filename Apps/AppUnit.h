@@ -10,28 +10,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-enum : u_int8_t
-{
-  kParamTypeFloat,
-  kParamTypeString,
-  kParamTypeToggle,
-  NumParamType
-};
-
-enum : u_int8_t
-{
-  kParamAssignTypeNone = 0,
-  kParamAssignTypeCV1,
-  kParamAssignTypeCV2,
-  kParamAssignTypeCV3,
-  kParamAssignTypeCV4,
-  kNumParamAssignType
-};
-
-const std::string AssignTypeName[] = {
-  "   ", "cv1", "cv2", "cv3", "cv4"
-};
-
 struct Param
 {
   std::string name;
@@ -50,7 +28,7 @@ public:
   AppUnit(DaisyPatch& patch, u_int8_t slot, std::string title);
   virtual ~AppUnit() {  }
 
-  virtual void Init() { };
+  virtual void Init() {};
   virtual void Exit() {};
 
   #pragma region about parameters

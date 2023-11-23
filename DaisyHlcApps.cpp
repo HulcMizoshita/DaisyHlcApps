@@ -10,10 +10,9 @@
 
 #include "Utils/Constants.h"
 #include "Utils/SampleHolder.h"
-#include "Utils/MainDelayLine.h"
+#include "Utils/DelayLine.h"
 
-#include "Apps/AppUnit.h"
-#include "Apps/DualVca/DualVca.h"
+#include "Apps/AppManager.h"
 
 #define CLAMP(value, min, max) ((value < min) ? min : ((value > max) ? max : value))
 
@@ -27,15 +26,17 @@ int16_t DSY_SDRAM_BSS sampleBuffer[2][SAMPLE_BUFFER_SIZE];
 
 static DaisyPatch patch;
 
-hlc::MainDelayLine delayLine;
+hlc::DelayLine delayLine;
 
 static SdmmcHandler sd_handler;
 FatFSInterface fsi;
 FIL SDFile;
 hlc::SampleHolder sampleHolder;
 
-std::unique_ptr<AppUnit> appA;
-std::unique_ptr<AppUnit> appB;
+// std::unique_ptr<AppUnit> appA;
+// std::unique_ptr<AppUnit> appB;
+AppManager appA(kTabA);
+AppManager appB(kTabB);
 #pragma endregion
 
 #pragma region controller variables
@@ -44,12 +45,11 @@ float ctrlVal[4]={ 1, 1, 1, 1 };
 size_t pressCount = 0;
 bool isPressing = false;
 
-
 u_int8_t selectTab = kTabA;
 u_int8_t selectRow = kRowStateEx;
 u_int8_t selectColumn = 0;
-u_int8_t selectAppA = kAppTypeVca;
-u_int8_t selectAppB = kAppTypeVca;
+u_int8_t selectAppA = kAppTypeDualVca;
+u_int8_t selectAppB = kAppTypeBlank;
 
 #pragma endregion
 
@@ -104,7 +104,7 @@ void updateControls()
     case kRowStateInFront:
       if (selectColumn == 0 && inc != 0)
       {
-        selectTab += inc;
+        selectTab = (int8_t)selectTab + inc < 0 ? 0 : selectTab + inc;
         selectTab = CLAMP(selectTab, kTabA, kTabB);
       }
       break;
@@ -114,14 +114,14 @@ void updateControls()
         switch (selectTab)
         {
         case kTabA:
-          selectAppA += inc;
-          selectAppA = CLAMP(selectAppA ,kAppTypeVca, kNumAppType - 1);
-          appA.reset(new DualVca(patch, 0));
+          selectAppA = (int8_t)selectAppA + inc < 0 ? 0 : selectAppA + inc;
+          selectAppA = CLAMP(selectAppA ,kAppTypeBlank, kNumAppType - 1);
+          appA.ReloadApp(selectAppA, patch);
           break;
         case kTabB:
-          selectAppB += inc;
-          selectAppB = CLAMP(selectAppB ,kAppTypeVca, kNumAppType - 1);
-          appB.reset(new AppUnit(patch, 1, "Blank"));
+          selectAppB = (int8_t)selectAppB + inc < 0 ? 0 : selectAppB + inc;
+          selectAppB = CLAMP(selectAppB ,kAppTypeBlank, kNumAppType - 1);
+          appB.ReloadApp(selectAppB, patch);
           break;
         default:
           break;
@@ -133,16 +133,16 @@ void updateControls()
     } 
   }
 
-  appA->UpdateAutoControls(ctrlVal);
-  appB->UpdateAutoControls(ctrlVal);
+  appA.app->UpdateAutoControls(ctrlVal);
+  appB.app->UpdateAutoControls(ctrlVal);
 
   switch (selectTab)
   {
   case kTabA:
-    appA->UpdateFixedControls(selectRow, selectColumn, inc);
+    appA.app->UpdateFixedControls(selectRow, selectColumn, inc);
     break;
   case kTabB:
-    appB->UpdateFixedControls(selectRow, selectColumn, inc);
+    appB.app->UpdateFixedControls(selectRow, selectColumn, inc);
   default:
     break;
   }
@@ -153,8 +153,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
 {
   updateControls();
 
-  appA->AudioTickCallback(in, out, size);
-  appB->AudioTickCallback(in, out, size);
+  appA.app->AudioTickCallback(in, out, size);
+  appB.app->AudioTickCallback(in, out, size);
 }
 
 void UpdateOled()
@@ -169,10 +169,10 @@ void UpdateOled()
   switch (selectTab)
   {
   case kTabA:
-    sprintf(buf, "%s", appA->GetName().c_str());
+    sprintf(buf, "%s", appA.app->GetName().c_str());
     break;
   case kTabB:
-    sprintf(buf, "%s", appB->GetName().c_str());
+    sprintf(buf, "%s", appB.app->GetName().c_str());
     break;
   default:
     break;
@@ -194,10 +194,10 @@ void UpdateOled()
   switch (selectTab)
   {
   case kTabA:
-    appA->UpdateOled(selectRow, selectColumn);
+    appA.app->UpdateOled(selectRow, selectColumn);
     break;
   case kTabB:
-    appB->UpdateOled(selectRow, selectColumn);
+    appB.app->UpdateOled(selectRow, selectColumn);
     break;
   default:
     break;
@@ -239,18 +239,15 @@ int main(void)
 	patch.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
 	patch.StartAudio(AudioCallback);
 
-  appA.reset(new DualVca(patch, 0));
-  appB.reset(new AppUnit(patch, 1, "Blank"));
-
-  appA->Init();
-  appB->Init();
+  appA.ReloadApp(kAppTypeDualVca, patch);
+  appB.ReloadApp(kAppTypeDualVca, patch);
 
   while(1)
 	{
 	  patch.DelayMs(1);
 
-    appA->MainLoopCallback();
-    appB->MainLoopCallback();
+    appA.app->MainLoopCallback();
+    appB.app->MainLoopCallback();
 
     static int skip = 0;
     if (skip++>20)

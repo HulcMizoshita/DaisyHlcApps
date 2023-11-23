@@ -2,14 +2,15 @@
 TARGET = DaisyHlcApps
 # APP_TYPE = BOOT_SRAM
 
-OPT = -Os
+OPT = -Os -Wno-unknown-pragmas
 
 # Sources
 CPP_SOURCES += \
 DaisyHlcApps.cpp \
 Utils/SampleHolder.cpp \
-Utils/MainDelayLine.cpp \
+Utils/DelayLine.cpp \
 Apps/AppUnit.cpp \
+Apps/BiquadFilter/BiquadFilter.cpp \
 Apps/DualVca/DualVca.cpp
 
 # Library Locations

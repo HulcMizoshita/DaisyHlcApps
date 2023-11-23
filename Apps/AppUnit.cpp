@@ -79,7 +79,6 @@ void AppUnit::UpdateFixedControls(u_int8_t& row, u_int8_t& column, int32_t inc)
     return;
   }
   
-
   switch (row)
   {
   case kRowStateInFront:
@@ -161,7 +160,7 @@ void AppUnit::UpdateOled(u_int8_t row, u_int8_t column)
     m_patch.display.WriteString( buf, Font_7x10, true);
 
     m_patch.display.SetCursor(7 * 6, y);
-    sprintf(buf, ":%s", AssignTypeName[param.assignType].c_str());
+    sprintf(buf, ":%s", ParamAssignTypeName[param.assignType].c_str());
     m_patch.display.WriteString(buf, Font_7x10, !(paramId == selectParamId && row == kRowStateInBack));
 
     m_patch.display.SetCursor(7 * 10, y);

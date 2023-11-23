@@ -1,16 +1,16 @@
-#include "MainDelayLine.h"
+#include "DelayLine.h"
 
 using namespace hlc;
 
-MainDelayLine::MainDelayLine()
+DelayLine::DelayLine()
 {
 }
 
-MainDelayLine::~MainDelayLine()
+DelayLine::~DelayLine()
 {
 }
 
-void MainDelayLine::Init()
+void DelayLine::Init()
 {
   for (size_t i = 0; i < DELAY_BUFFER_SIZE; i++)
   {
@@ -21,20 +21,20 @@ void MainDelayLine::Init()
   }
 }
 
-void MainDelayLine::Write(u_int8_t ch, size_t index, float in)
+void DelayLine::Write(u_int8_t ch, size_t index, float in)
 {
   size_t writeIndex = (index + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE;
   delayBuffer[ch][writeIndex] = in;
 }
 
-float MainDelayLine::Read(u_int8_t ch, size_t index)
+float DelayLine::Read(u_int8_t ch, size_t index)
 {
   size_t readIndex = (index + DELAY_BUFFER_SIZE) % DELAY_BUFFER_SIZE;
   return delayBuffer[ch][readIndex];
 }
 
 
-float MainDelayLine::ReadFrac(u_int8_t ch, float index)
+float DelayLine::ReadFrac(u_int8_t ch, float index)
 {
   float readIndex = fmodf(index + DELAY_BUFFER_SIZE, DELAY_BUFFER_SIZE);
   size_t readIndexFloor = floorf(readIndex);
